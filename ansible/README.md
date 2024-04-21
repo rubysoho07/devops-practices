@@ -79,3 +79,13 @@ ok: [IP_OR_HOSTNAME] => {
 PLAY RECAP ************************************************************************************************************************************************************************************************
 IP_OR_HOSTNAME                : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
 ```
+
+## 수정 후 실행
+
+```shell
+ansible-playbook -i inventory.yaml playbook.yaml --private-key KEY_FILE_PATH
+```
+
+## Playbook 실행 전 테스트 
+
+`ansible-playbook` 실행 시 `--check` 옵션을 붙인다. ([참고](https://docs.ansible.com/ansible/2.9/user_guide/playbooks_checkmode.html))
