@@ -7,3 +7,26 @@
    - name: Print message
      ansible.builtin.debug:
       msg: Hello world
+
+- name: Update all packages
+  hosts: test_hosts
+  become: true        # To run command with sudo
+  tasks:
+   # Update packages with dnf
+   # Reference: https://docs.ansible.com/ansible/latest/collections/ansible/builtin/command_module.html
+   - name: Update with dnf
+     ansible.builtin.dnf:
+      name: "*"
+      update_only: true
+      # state: latest
+
+- name: Install nginx
+  hosts: test_hosts
+  become: true        # To run command with sudo
+  tasks:
+   # Install nginx with dnf
+   # https://docs.ansible.com/ansible/latest/collections/ansible/builtin/index.html#plugins-in-ansible-builtin
+   - name: Install nginx
+     ansible.builtin.dnf:
+      name: nginx
+      # state: latest
