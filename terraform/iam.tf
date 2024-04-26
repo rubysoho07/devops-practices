@@ -19,7 +19,7 @@ resource "aws_iam_role" "control_node" {
   })
 
   managed_policy_arns = [
-    "arn:aws:iam::aws:policy/AmazonEC2FullAccess",
+    "arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess",
     "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore",
     aws_iam_policy.ssm_connection_temp.arn
   ]
