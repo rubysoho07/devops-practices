@@ -131,4 +131,4 @@ ansible-playbook -i inventory_aws_ec2.yaml playbook.yaml --private-key keypair.p
 ansible-playbook -i inventory_aws_ec2.yaml playbook.yaml
 ```
 
-혹시나 문제가 발생하면 `ansible-galaxy collection isntall community.aws --force` 명령으로 강제로 모듈을 업데이트 해 본다. 
+혹시나 문제가 발생하면 `ansible-galaxy collection install community.aws --force` 명령으로 강제로 모듈을 업데이트 해 본다. 
