@@ -89,3 +89,26 @@ ansible-playbook -i inventory.yaml playbook.yaml --private-key KEY_FILE_PATH
 ## Playbook 실행 전 테스트 
 
 `ansible-playbook` 실행 시 `--check` 옵션을 붙인다. ([참고](https://docs.ansible.com/ansible/2.9/user_guide/playbooks_checkmode.html))
+
+## Dynamic Inventory로 테스트
+
+* `Group = Ansible_Managed_Nodes` 태그를 기준으로 하는 인스턴스를 필터링함
+* `ansible/inventory_aws_ec2.yaml` 파일을 인스턴스에 저장
+    * 참고: Inventory 파일은 `aws_ec2.(yml|yaml)` 로 끝나야 하며, `plugin: amazon.aws.aws_ec2`를 첫 줄에 넣어야 함
+* 그리고 Inventory가 정상적으로 들어갔는지 확인 (NODE_IP로 표시한 부분은 상황에 따라 달라질 수 있음)
+
+```shell
+ansible-inventory -i inventory_aws_ec2.yaml --graph
+@all:
+  |--@ungrouped:
+  |--@aws_ec2:          # EC2 서버 전체를 포괄하므로, Control Node도 포함
+  |  |--ec2-NODE_IP.ap-northeast-2.compute.amazonaws.com
+  |  |--ec2-NODE_IP.ap-northeast-2.compute.amazonaws.com
+  |  |--ec2-NODE_IP.ap-northeast-2.compute.amazonaws.com
+  |  |--ec2-NODE_IP.ap-northeast-2.compute.amazonaws.com
+  |--@test_hosts:       # Group = Ansible_Managed_Nodes 태그가 붙은 것들만 해당
+  |  |--ec2-NODE_IP.ap-northeast-2.compute.amazonaws.com
+  |  |--ec2-NODE_IP.ap-northeast-2.compute.amazonaws.com
+  |  |--ec2-NODE_IP.ap-northeast-2.compute.amazonaws.com
+```
+
