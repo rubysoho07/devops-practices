@@ -23,7 +23,10 @@ resource "aws_instance" "control_node" {
   user_data = <<EOF
 #!/bin/bash
 sudo dnf update -y
-sudo dnf install ansible python3-pip -y
+sudo dnf install ansible -y
+
+# Need for EC2 dynamic inventory 
+sudo dnf install python3-pip -y
 python3 -m pip install boto3
 EOF
 

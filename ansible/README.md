@@ -112,3 +112,9 @@ ansible-inventory -i inventory_aws_ec2.yaml --graph
   |  |--ec2-NODE_IP.ap-northeast-2.compute.amazonaws.com
 ```
 
+PEM키의 내용을 복사 후 다음과 같이 Playbook 실행 가능 (키 페어의 이름은 `keypair.pem`으로 저장했고, `chmod 400 keypair.pem` 명령으로 권한을 주었음을 가정)
+
+```shell
+ansible-playbook -i inventory_aws_ec2.yaml playbook.yaml --private-key keypair.pem
+```
+

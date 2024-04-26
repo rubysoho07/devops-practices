@@ -13,6 +13,15 @@ resource "aws_security_group_rule" "ingress_ssh" {
   protocol                 = "tcp"
 }
 
+resource "aws_security_group_rule" "ingress_http" {
+  type                     = "ingress"
+  security_group_id        = aws_security_group.managed_nodes.id
+  source_security_group_id = var.security_group_id
+  from_port                = 80
+  to_port                  = 80
+  protocol                 = "tcp"
+}
+
 resource "aws_security_group_rule" "egress_all" {
   type              = "egress"
   security_group_id = aws_security_group.managed_nodes.id
