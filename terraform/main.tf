@@ -28,6 +28,9 @@ sudo dnf install ansible -y
 # Need for EC2 dynamic inventory 
 sudo dnf install python3-pip -y
 python3 -m pip install boto3
+
+# Need for EC2 dynamic inventory and SSM Session Manager Connection
+dnf install -y https://s3.amazonaws.com/session-manager-downloads/plugin/latest/linux_64bit/session-manager-plugin.rpm
 EOF
 
   tags = {
@@ -48,4 +51,9 @@ resource "aws_instance" "managed_nodes" {
     Name  = "Ansible-Test-${count.index}"
     Group = "Ansible_Managed_Nodes"
   }
+}
+
+resource "aws_s3_bucket" "ssm_connection_temp" {
+  bucket        = "gonigoni-test-ansible-ssm-connection"
+  force_destroy = true
 }
