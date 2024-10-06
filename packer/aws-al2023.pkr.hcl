@@ -8,7 +8,7 @@ packer {
 }
 
 source "amazon-ebs" "al2023" {
-  ami_name      = "learn-packer-linux-aws-gonigoni"
+  ami_name      = "learn-packer-linux-aws-gonigoni-nginx"
   instance_type = "t2.micro"
   region        = "ap-northeast-2"
   source_ami_filter {
@@ -28,4 +28,18 @@ build {
   sources = [
     "source.amazon-ebs.al2023"
   ]
+  
+  provisioner "shell" {
+    inline = [
+      "sudo yum install -y git"
+    ]
+  }
+
+  provisioner "shell" {
+    inline = [
+      "sudo yum install -y nginx",
+      "sudo systemctl start nginx",
+      "sudo systemctl enable nginx"
+    ]
+  }
 }
