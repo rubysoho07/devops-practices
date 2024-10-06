@@ -1,0 +1,37 @@
+- name: My first play
+  hosts: default      # 'default' is host_alias attribute (Used by Ansible temporary inventory)
+  tasks:
+   - name: Ping my hosts
+     ansible.builtin.ping:
+
+   - name: Print message
+     ansible.builtin.debug:
+      msg: Hello world
+
+- name: Update all packages
+  hosts: default
+  become: true        # To run command with sudo
+  tasks:
+   # Update packages with dnf
+   # Reference: https://docs.ansible.com/ansible/latest/collections/ansible/builtin/command_module.html
+   - name: Update with dnf
+     ansible.builtin.dnf:
+      name: "*"
+      update_only: true
+      # state: latest
+
+- name: Install nginx
+  hosts: default
+  become: true        # To run command with sudo
+  tasks:
+   # Install nginx with dnf
+   # https://docs.ansible.com/ansible/latest/collections/ansible/builtin/index.html#plugins-in-ansible-builtin
+   - name: Install nginx
+     ansible.builtin.dnf:
+      name: nginx
+      # state: latest
+   - name: Start nginx service
+     ansible.builtin.service:
+      name: nginx
+      enabled: true
+      state: started
