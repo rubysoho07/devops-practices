@@ -18,7 +18,7 @@ locals {
 
 source "amazon-ebs" "al2023_ansible" {
   ami_name      = "al2023-ansible-${local.timestamp}"
-  instance_type = "t2.micro"
+  instance_type = "t3.micro"
   region        = "ap-northeast-2"
 
   source_ami_filter {
@@ -31,6 +31,13 @@ source "amazon-ebs" "al2023_ansible" {
     owners      = ["amazon"]
   }
   
+  // tags for AMI
+  tags = {
+    Name = "al2023-ansible"
+    OS   = "Amazon Linux 2023"
+    Version = "AL2023"
+  }
+
   ssh_username = "ec2-user"
 }
 
