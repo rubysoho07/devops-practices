@@ -20,6 +20,16 @@
       update_only: true
       # state: latest
 
+# dnf groupinstall 'Development Tools'
+- name: Install Development Tools
+  hosts: default
+  become: true
+  tasks:
+   - name: Install Development Tools
+     ansible.builtin.dnf:
+      name: '@Development Tools'
+      state: present
+
 - name: Install nginx
   hosts: default
   become: true        # To run command with sudo
@@ -35,3 +45,10 @@
       name: nginx
       enabled: true
       state: started
+
+- name: Build and Install Valkey
+  hosts: default
+  become: true
+  tasks:
+   - name: Run script
+     ansible.builtin.script: build_valkey.sh

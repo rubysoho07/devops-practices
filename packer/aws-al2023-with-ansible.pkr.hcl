@@ -18,7 +18,7 @@ locals {
 
 source "amazon-ebs" "al2023_ansible" {
   ami_name      = "al2023-ansible-${local.timestamp}"
-  instance_type = "t3.micro"
+  instance_type = "m7i.large"
   region        = "ap-northeast-2"
 
   source_ami_filter {
