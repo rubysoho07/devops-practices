@@ -51,4 +51,4 @@
   become: true
   tasks:
    - name: Run script
-     ansible.builtin.script: build_valkey.sh
+     ansible.builtin.script: ../scripts/build_valkey.sh
