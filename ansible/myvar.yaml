@@ -1,0 +1,2 @@
+install_nginx: true
+install_mysql: false

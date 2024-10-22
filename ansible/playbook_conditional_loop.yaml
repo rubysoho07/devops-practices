@@ -1,0 +1,59 @@
+- name: Contional and Loop Test
+  hosts: localhost
+  tasks:
+   - name: Ping my hosts
+     ansible.builtin.ping:
+
+   - name: Print message
+     ansible.builtin.debug:
+      msg: This is Conditional and Loop Test
+
+- name: Conditional Install packages
+  hosts: localhost
+  become: true
+  tasks:
+   - name: Update with dnf
+     ansible.builtin.dnf:
+      name: "*"
+      update_only: true
+     when: ansible_facts['distribution'] == "Amazon"
+
+   - name: Update with apt
+     ansible.builtin.apt:
+      name: "*"
+      state: "latest"
+      only_upgrade: true
+     when: ansible_facts['distribution'] == "Ubuntu"
+
+- name: Conditional Install Packages from variable files
+  hosts: localhost
+  become: true
+  vars_files:
+   - "myvar.yaml"
+  tasks:
+   - name: Install nginx
+     ansible.builtin.dnf:
+      name: "nginx"
+     when: (ansible_facts['distribution'] == "Amazon") and (install_nginx)
+
+   - name: Install mysql
+     ansible.builtin.dnf:
+      name: "mysql"
+     when: (ansible_facts['distribution'] == "Amazon") and (install_mysql)
+
+- name: Print messages with Loop
+  hosts: localhost
+  tasks:
+   - name: Print message
+     ansible.builtin.debug:
+      msg: "Hello, {{ item }}"
+     loop:
+      - "yungon"
+      - "gonigoni"
+
+   - name: Print message in hashes
+     ansible.builtin.debug:
+      msg: "Hello, {{ item.name }} in {{ item.group }}"
+     loop:
+      - { name: "yungon", group: "work" }
+      - { name: "gonigoni", group: "home" }
