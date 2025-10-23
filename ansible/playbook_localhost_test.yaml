@@ -7,3 +7,39 @@
    - name: Print message
      ansible.builtin.debug:
       msg: Hello world
+
+   - name: Install nginx for Ubuntu Distribution
+     ansible.builtin.apt:
+      name: nginx
+      state: present
+     when: ansible_facts['os_family'] == "Debian"
+    
+   - name: Run command to start nginx
+     ansible.builtin.command: systemctl start nginx
+     when: ansible_facts['os_family'] == "Debian"
+    
+   - name: Run ad-hoc scripts with if statement
+     ansible.builtin.shell: |
+      if [ "{{ ansible_facts['os_family'] }}" == "Debian" ]; then
+        echo "This is a Debian based system"
+      else
+        echo "This is not a Debian based system"
+      fi
+  
+   - name: Remove user by condition
+     ansible.builtin.shell: |
+       if [ $( grep developer /etc/passwd | wc -l ) -ne 0 ]; then
+         userdel -r developer
+         echo "User developer deleted"
+       else
+         echo "User not found"
+       fi
+     register: userdel_result
+
+   - name: Debug userdel stderr
+     ansible.builtin.debug:
+       var: userdel_result.stderr
+
+   - name: Debug userdel stdout
+     ansible.builtin.debug:
+       var: userdel_result.stdout
