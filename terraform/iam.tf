@@ -17,12 +17,21 @@ resource "aws_iam_role" "control_node" {
       },
     ]
   })
+}
 
-  managed_policy_arns = [
-    "arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess",
-    "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore",
-    aws_iam_policy.ssm_connection_temp.arn
-  ]
+resource "aws_iam_role_policy_attachment" "control_node_ec2_readonly" {
+  role       = aws_iam_role.control_node.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess"
+}
+
+resource "aws_iam_role_policy_attachment" "control_node_ssm_core" {
+  role       = aws_iam_role.control_node.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+}
+
+resource "aws_iam_role_policy_attachment" "control_node_ssm_connection_temp" {
+  role       = aws_iam_role.control_node.name
+  policy_arn = aws_iam_policy.ssm_connection_temp.arn
 }
 
 resource "aws_iam_instance_profile" "managed_nodes" {
@@ -44,10 +53,11 @@ resource "aws_iam_role" "managed_nodes" {
       },
     ]
   })
+}
 
-  managed_policy_arns = [
-    "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
-  ]
+resource "aws_iam_role_policy_attachment" "managed_nodes_ssm_core" {
+  role       = aws_iam_role.managed_nodes.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
 }
 
 resource "aws_iam_policy" "ssm_connection_temp" {
