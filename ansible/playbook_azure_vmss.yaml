@@ -1,0 +1,29 @@
+- name: My first play
+  # hosts 항목은 그룹 이름 또는 단일 호스트 이름 기준으로 설정
+  hosts: my_vmss_tag_hosts
+  tasks:
+    - name: Ping my hosts
+      ansible.builtin.ping: 
+    
+    - name: Print message
+      ansible.builtin.debug:
+        msg: Hello world
+
+- name: Update all packages
+  hosts: my_vmss_tag_hosts
+  become: true
+  tasks:
+    - name: Update all packages with apt
+      ansible.builtin.apt:
+        name: "*"
+        state: latest
+
+- name: Install nginx
+  hosts: my_vmss_tag_hosts
+  become: true
+  tasks:
+    - name: Install nginx
+      ansible.builtin.apt:
+        name: nginx
+        state: latest
+        

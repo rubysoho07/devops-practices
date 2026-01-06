@@ -1,0 +1,26 @@
+plugin: azure.azcollection.azure_rm
+
+# Azure CLI로 로그인 (Cloud Shell에서는 로그인한 상태임)
+# auth_source 미제공 시 검색 순서: module parameter -> env -> credential_file -> cli
+auth_source: cli
+
+# 리소스 그룹 선택 조건 ('*' 지정 시 모든 리소스 그룹에서 검색 - 기본값임)
+include_vm_resource_groups:
+  - my-resource-group
+
+# 조건에 맞는 서버를 특정 그룹에 추가
+conditional_groups:
+  # 모든 호스트를 `all_the_hosts` 그룹으로 표시함
+  all_the_hosts: true
+  # VM의 이름에 특정 값이 있는지 확인하여 key 이름으로 설정된 그룹에 넣음
+  my_name_hosts: "'my_name' in name"
+  # 특정 태그 값 기준으로 그룹 생성
+  vm_tag_hosts: "tags['Group'] is defined and tags['Group'] == 'Gonigoni'"
+  # 위치 기준으로 그룹 생성
+  seoul_hosts: "location in ['koreacentral']"
+
+# 지정한 설정에 따라 자동으로 그룹 생성
+keyed_groups:
+  # "tag_<Key>_<Value>"의 방식으로 그룹이 생성됨
+  - prefix: tag
+    key: tags

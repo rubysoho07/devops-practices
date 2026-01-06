@@ -1,0 +1,22 @@
+plugin: azure.azcollection.azure_rm
+
+# Azure CLI로 로그인 (Cloud Shell에서는 로그인한 상태임)
+auth_source: cli
+
+# 리소스 그룹 선택 조건
+include_vm_resource_groups:
+  - my-resource-group
+
+# VMSS 선택 조건: 모든 리소스 그룹에서 VMSS로부터 VM을 가져옴
+# 어차피 리소스 그룹 내 모든 VM을 가져오기 때문에 의미 없는듯?
+include_vmss_resource_groups:
+  - my-vmss
+
+# VMSS에 소속된 서버만 그룹으로 관리
+# 'vmss is not defined'로는 거를 수 없음: 모든 서버에 `{}` 값이 들어가 있기 때문
+# -> ansible-inventory -i inventory_vmss_azure_rm.yaml --list 명령으로 확인 가능
+conditional_groups:
+  # 태그 기준
+  my_vmss_tag_hosts: "tags['Group'] is defined and tags['Group'] == 'Gonigoni_VMSS'"
+  # 이름 기준
+  my_vmss_name_hosts: "'gonigoni-vmss-test1' in name"
