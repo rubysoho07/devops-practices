@@ -3,12 +3,12 @@ plugin: azure.azcollection.azure_rm
 # Azure CLI로 로그인 (Cloud Shell에서는 로그인한 상태임)
 auth_source: cli
 
-# 리소스 그룹 선택 조건
+# 리소스 그룹 선택 조건: 기본적으로 모든 리소스 그룹에서 VM을 가져옴
 include_vm_resource_groups:
   - my-resource-group
 
-# VMSS 선택 조건: 모든 리소스 그룹에서 VMSS로부터 VM을 가져옴
-# 기본값으로 VMSS에 있는 리소스는 가져오지 않으므로 '*'로 세팅 권장 (특히 조직 내 속한 경우 인스턴스가 표시되지 않을 가능성이 높음)
+# VMSS 선택 조건: 리소스 그룹에서 VMSS로부터 VM을 가져옴
+# 기본값으로 VMSS에 있는 리소스는 가져오지 않으므로 '*' 또는 리소스 그룹 이름을 지정해야 함
 include_vmss_resource_groups:
   - '*'
 
