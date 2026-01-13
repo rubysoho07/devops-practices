@@ -7,8 +7,10 @@ auth_source: cli
 include_vm_resource_groups:
   - my-resource-group
 
-# VMSS 선택 조건: 리소스 그룹에서 VMSS로부터 VM을 가져옴
-# 기본값으로 VMSS에 있는 리소스는 가져오지 않으므로 '*' 또는 리소스 그룹 이름을 지정해야 함
+# VMSS 선택 조건: 리소스 그룹에서 VMSS로부터 VM을 가져옴 (리소스 그룹 이름을 입력)
+# Flexible Orchestration Mode를 사용하면 리소스 그룹을 따로 입력하지 않아도 모든 VM이 표시됨 (최근 Flexible Orchestration Mode로 생성하는 것이 권장됨)
+# Unified Orchestration Mode를 사용하면 리소스 그룹을 입력해야 함
+# 참고자료: https://learn.microsoft.com/ko-kr/azure/virtual-machine-scale-sets/virtual-machine-scale-sets-orchestration-modes
 include_vmss_resource_groups:
   - '*'
 
