@@ -8,9 +8,9 @@ include_vm_resource_groups:
   - my-resource-group
 
 # VMSS 선택 조건: 모든 리소스 그룹에서 VMSS로부터 VM을 가져옴
-# 어차피 리소스 그룹 내 모든 VM을 가져오기 때문에 의미 없는듯?
+# 기본값으로 VMSS에 있는 리소스는 가져오지 않으므로 '*'로 세팅 권장 (특히 조직 내 속한 경우 인스턴스가 표시되지 않을 가능성이 높음)
 include_vmss_resource_groups:
-  - my-vmss
+  - '*'
 
 # VMSS에 소속된 서버만 그룹으로 관리
 # 'vmss is not defined'로는 거를 수 없음: 모든 서버에 `{}` 값이 들어가 있기 때문
