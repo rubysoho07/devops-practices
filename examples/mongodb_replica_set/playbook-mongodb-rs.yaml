@@ -1,0 +1,177 @@
+---
+- name: Generate MongoDB keyfile on localhost
+  hosts: localhost
+  connection: local
+  gather_facts: no
+  tasks:
+    - name: Generate MongoDB keyfile
+      shell: openssl rand -base64 756 > mongodb-keyfile
+      args:
+        creates: mongodb-keyfile
+
+- name: Install MongoDB on Amazon Linux 2023
+  hosts: service_MongoDB
+  become: yes
+  vars:
+    mongodb_version: "8.0"
+    replica_set_name: "rs0"
+    
+  tasks:
+    - name: Print information of current host
+      debug:
+        msg: > 
+          Hostname: {{ inventory_hostname }}
+          Private IP: {{ private_ip_address }}
+          Public IP: {{ public_ip_address }}
+
+    - name: Create MongoDB repository file
+      copy:
+        content: |
+          [mongodb-org-{{ mongodb_version }}]
+          name=MongoDB Repository
+          baseurl=https://repo.mongodb.org/yum/amazon/2023/mongodb-org/{{ mongodb_version }}/x86_64/
+          gpgcheck=1
+          enabled=1
+          gpgkey=https://pgp.mongodb.com/server-{{ mongodb_version }}.asc
+        dest: /etc/yum.repos.d/mongodb-org-{{ mongodb_version }}.repo
+        mode: '0644'
+
+    - name: Install MongoDB packages
+      dnf:
+        name:
+          - mongodb-org
+          - python3-pip
+        state: present
+
+    - name: Install pymongo library
+      ansible.builtin.pip:
+        name: pymongo
+        state: present
+
+    - name: Start and enable mongod service
+      systemd:
+        name: mongod
+        state: started
+        enabled: yes
+
+    - name: Wait for MongoDB to start
+      wait_for:
+        port: 27017
+        host: localhost
+        timeout: 30
+
+    - name: Check MongoDB status
+      command: systemctl is-active mongod
+      register: mongodb_status
+      changed_when: false
+
+    - name: Display MongoDB status
+      debug:
+        msg: "MongoDB service status: {{ mongodb_status.stdout }}"
+
+    - name: Copy MongoDB keyfile to servers
+      copy:
+        src: mongodb-keyfile
+        dest: /etc/mongodb-keyfile
+        owner: mongod
+        group: mongod
+        mode: '0400'
+      notify: restart mongod
+
+    # Replication 관련 설정이 주석 처리되어 있기 때문에 blockinfile 모듈로 관리
+    - name: Configure MongoDB for replica set
+      blockinfile:
+        path: /etc/mongod.conf
+        marker: "# {mark} ANSIBLE MANAGED BLOCK - MongoDB Replica Set"
+        block: |
+          replication:
+            replSetName: {{ replica_set_name }}
+        backup: yes
+      notify: restart mongod
+
+    # 기본값이 127.0.0.1로 되어 있기 때문에 lineinfile 모듈로 라인 대체
+    - name: Configure MongoDB bind IP
+      lineinfile:
+        path: /etc/mongod.conf
+        regexp: '^  bindIp:'
+        # 권장사항
+        # line: '  bindIp: 127.0.0.1,{{ private_ip_address }}'
+        # 아래 내용은 테스트 환경에서 사용하기
+        line: '  bindIp: 0.0.0.0'
+        backup: yes
+      notify: restart mongod
+
+    - name: Restart mongod if configuration changed
+      meta: flush_handlers
+
+    - name: Wait for MongoDB to restart
+      wait_for:
+        port: 27017
+        host: localhost
+        timeout: 30
+
+    - name: Initialize replica set (run only on first host)
+      community.mongodb.mongodb_replicaset:
+        replica_set: "{{ replica_set_name }}"
+        members:
+          - host: "{{ hostvars[groups['service_MongoDB'][0]]['private_ip_address'] }}:27017"
+            priority: 1
+          - host: "{{ hostvars[groups['service_MongoDB'][1]]['private_ip_address'] }}:27017"
+            priority: 0.5
+          - host: "{{ hostvars[groups['service_MongoDB'][2]]['private_ip_address'] }}:27017"
+            priority: 0.5
+      when: inventory_hostname == groups['service_MongoDB'][0]
+      register: rs_init_result
+
+    - name: Display replica set initialization result
+      debug:
+        msg: "{{ rs_init_result }}"
+      when: inventory_hostname == groups['service_MongoDB'][0]
+
+    - name: Wait for replica set to be ready
+      pause:
+        seconds: 10
+      when: inventory_hostname == groups['service_MongoDB'][0]
+
+    - name: Create MongoDB admin user (run only on primary)
+      community.mongodb.mongodb_user:
+        database: admin
+        name: "{{ mongodb_admin_user }}"
+        password: "{{ mongodb_admin_password }}"
+        roles:
+          - db: admin
+            role: root
+        state: present
+      when: inventory_hostname == groups['service_MongoDB'][0]
+      register: admin_user_result
+
+    - name: Display admin user creation result
+      debug:
+        msg: "{{ admin_user_result }}"
+      when: inventory_hostname == groups['service_MongoDB'][0]
+
+    - name: Enable MongoDB authentication
+      blockinfile:
+        path: /etc/mongod.conf
+        marker: "# {mark} ANSIBLE MANAGED BLOCK - MongoDB Security"
+        block: |
+          security:
+            authorization: enabled
+            keyFile: /etc/mongodb-keyfile
+        backup: yes
+      notify: restart mongod
+
+    - name: Restart mongod for authentication
+      meta: flush_handlers
+
+    - name: Wait for MongoDB to restart with authentication
+      wait_for:
+        port: 27017
+        host: localhost
+        timeout: 30
+
+  handlers:
+    - name: restart mongod
+      systemd:
+        name: mongod
+        state: restarted

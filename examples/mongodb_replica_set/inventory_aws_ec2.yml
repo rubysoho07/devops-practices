@@ -1,0 +1,27 @@
+plugin: amazon.aws.aws_ec2
+
+regions:
+  - ap-northeast-2
+
+filters:
+  tag:Service: MongoDB
+  instance-state-name: running
+
+# 변수의 값에 기반하여 그룹 생성
+# key: 그룹 생성에 사용하는 입력 dictionary 키
+# prefix: 그룹 이름에 붙는 접두사
+# 아래 내용 해설: Service 태그에 xxx라는 값이 붙으면 service_xxx 라는 그룹 생성
+keyed_groups:
+  - key: tags.Service
+    prefix: service
+
+# Hostname 변수의 우선 순위 목록
+# 선택 가능한 옵션은 https://docs.aws.amazon.com/cli/latest/reference/ec2/describe-instances.html#options 에서 확인 가능
+# 제공한 값이 위의 옵션에 없는 값이면 literal string으로 사용됨
+hostnames:
+  - ip-address         # Public IP
+  - private-ip-address # Private IP
+
+compose:
+  ansible_user: ec2-user
+  ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
