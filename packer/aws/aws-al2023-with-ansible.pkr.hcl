@@ -48,6 +48,6 @@ build {
   ]
 
   provisioner "ansible" {
-    playbook_file = "../ansible/playbook_for_packer.yaml"
+    playbook_file = "../../ansible/playbook_for_packer.yaml"
   }
 }
