@@ -1,0 +1,22 @@
+plugin: amazon.aws.aws_ec2
+
+regions:
+  - ap-northeast-2
+
+filters:
+  tag:Name: 
+    - k3s_multi_server
+    - k3s_multi_agent
+  instance-state-name: running
+
+keyed_groups:
+  - key: tags.Name
+    prefix: ""
+    separator: ""
+
+hostnames:
+  - ip-address
+
+compose:
+  ansible_user: ec2-user
+  ansible_ssh_common_args: '-o StrictHostKeyChecking=no'

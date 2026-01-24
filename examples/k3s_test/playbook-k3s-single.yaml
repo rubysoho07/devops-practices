@@ -1,0 +1,36 @@
+---
+- name: Install and configure k3s
+  hosts: k3s_single
+  become: yes
+  tasks:
+    - name: Install k3s
+      shell: curl -sfL https://get.k3s.io | sh -
+
+    - name: Create k3s config file
+      copy:
+        content: |
+          write-kubeconfig-mode: "0644"
+          
+          tls-san:
+            - "{{ public_ip_address }}"
+        dest: /etc/rancher/k3s/config.yaml
+        mode: '0644'
+
+    - name: Restart k3s service
+      systemd:
+        name: k3s
+        state: restarted
+
+    - name: Fetch kubeconfig file
+      fetch:
+        src: /etc/rancher/k3s/k3s.yaml
+        dest: ./kubeconfig-k3s-single.yaml
+        flat: yes
+
+    - name: Replace localhost with public IP in kubeconfig
+      become: no
+      local_action:
+        module: replace
+        path: ./kubeconfig-k3s-single.yaml
+        regexp: '127\.0\.0\.1'
+        replace: "{{ public_ip_address }}"
