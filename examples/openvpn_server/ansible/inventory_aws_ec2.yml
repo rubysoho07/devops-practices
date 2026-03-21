@@ -1,0 +1,16 @@
+plugin: amazon.aws.aws_ec2
+
+regions:
+  - ap-northeast-2
+
+filters:
+  tag:Name: OpenVPN
+  instance-state-name: running
+
+keyed_groups:
+  - key: tags.Name
+    prefix: server
+
+hostnames:
+  - ip-address
+  - private-ip-address

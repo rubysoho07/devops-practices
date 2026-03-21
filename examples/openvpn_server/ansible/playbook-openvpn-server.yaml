@@ -1,0 +1,147 @@
+---
+- name: Setup OpenVPN Server on Rocky Linux 9
+  hosts: server_OpenVPN
+  become: true
+
+  vars:
+    openvpn_dir: /etc/openvpn
+    easyrsa_dir: /etc/openvpn/easy-rsa
+    server_name: server
+
+  tasks:
+    # -------------------------------------------------------
+    # Install packages
+    # -------------------------------------------------------
+    - name: Install epel-release
+      ansible.builtin.dnf:
+        name: epel-release
+        state: present
+
+    - name: Install openvpn and easy-rsa
+      ansible.builtin.dnf:
+        name:
+          - openvpn
+          - easy-rsa
+        state: present
+
+    # -------------------------------------------------------
+    # Setup Easy-RSA PKI
+    # -------------------------------------------------------
+    - name: Create symbolic link to easy-rsa 
+      ansible.builtin.file:
+        src: /usr/share/easy-rsa/3
+        dest: "{{ easyrsa_dir }}"
+        state: link
+
+    - name: Initialize PKI
+      ansible.builtin.command:
+        cmd: ./easyrsa --batch init-pki
+        chdir: "{{ easyrsa_dir }}"
+        creates: "{{ easyrsa_dir }}/pki"
+
+    - name: Build CA (no password)
+      ansible.builtin.command:
+        cmd: ./easyrsa --batch build-ca nopass
+        chdir: "{{ easyrsa_dir }}"
+        creates: "{{ easyrsa_dir }}/pki/ca.crt"
+
+    - name: Generate server certificate and key
+      ansible.builtin.command:
+        cmd: ./easyrsa --batch build-server-full server nopass
+        chdir: "{{ easyrsa_dir }}"
+        creates: "{{ easyrsa_dir }}/pki/issued/server.crt"
+
+    - name: Check created server certificate and key file
+      ansible.builtin.stat:
+        path: "{{ item }}"
+      loop:
+        - "{{ easyrsa_dir }}/pki/issued/server.crt"
+        - "{{ easyrsa_dir }}/pki/private/server.key"
+      register: key_files
+
+    - name: Fail the playbook if any file is missing
+      ansible.builtin.assert:
+        that: 
+          - item.stat.exists | bool
+      loop: "{{ key_files.results }}"
+      loop_control:
+        label: "{{ item.item }}"
+
+    - name: Generate Diffie Hellman parameters
+      ansible.builtin.command:
+        cmd: ./easyrsa --batch gen-dh
+        chdir: "{{ easyrsa_dir }}"
+        creates: "{{ easyrsa_dir }}/pki/dh.pem"
+
+    # -------------------------------------------------------
+    # Server configuration
+    # -------------------------------------------------------
+    - name: Create openvpn server directory
+      ansible.builtin.file:
+        path: "{{ openvpn_dir }}/server"
+        state: directory
+        mode: "0700"
+
+    - name: Create server configuration
+      ansible.builtin.copy:
+        src: "/usr/share/doc/openvpn/sample/sample-config-files/server.conf"
+        dest: "{{ openvpn_dir }}/server/{{ server_name }}.conf"
+        remote_src: yes
+
+    - name: Configure key files
+      ansible.builtin.lineinfile:
+        path: "{{ openvpn_dir }}/server/{{ server_name }}.conf"
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+      loop:
+        - { regexp: '^ca ca.crt$', line: "ca {{ easyrsa_dir }}/pki/ca.crt" }
+        - { regexp: '^cert server.crt$', line: "cert {{ easyrsa_dir }}/pki/issued/server.crt" }
+        - { regexp: '^key server.key$', line: "key {{ easyrsa_dir }}/pki/private/server.key" }
+        - { regexp: '^dh dh.pem$', line: "dh {{ easyrsa_dir }}/pki/dh.pem" }
+    
+    - name: Comment out TLS auth
+      ansible.builtin.replace:
+        path: "{{ openvpn_dir }}/server/{{ server_name }}.conf"
+        regexp: '^tls-auth (.+$)'
+        replace: '#tls-auth \1'
+
+    # -------------------------------------------------------
+    # Firewall & IP forwarding
+    # -------------------------------------------------------
+    - name: Install firewalld
+      ansible.builtin.dnf:
+        name:
+          - firewalld
+        state: present
+
+    - name: Enable and start firewalld service
+      ansible.builtin.systemd:
+        name: "firewalld"
+        enabled: true
+        state: started
+
+    - name: Allow OpenVPN port in firewalld
+      ansible.builtin.command:
+        cmd: firewall-cmd --add-service=openvpn --permanent
+
+    - name: Enable NAT by masquerade rule
+      ansible.builtin.command:
+        cmd: firewall-cmd --add-masquerade --permanent
+    
+    - name: Reload the firewall
+      ansible.builtin.command:
+        cmd: firewall-cmd --reload
+
+    - name: Enable IP forwarding
+      ansible.builtin.command:
+        cmd: sysctl -w net.ipv4.ip_forward=1
+
+    # -------------------------------------------------------
+    # Starting OpenVPN server
+    # -------------------------------------------------------
+    - name: Enable and start openvpn-server service
+      ansible.builtin.systemd:
+        name: "openvpn-server@{{ server_name }}.service"
+        enabled: true
+        state: started
+        daemon_reload: true
