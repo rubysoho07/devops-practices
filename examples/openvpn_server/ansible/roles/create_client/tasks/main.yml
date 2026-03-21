@@ -1,0 +1,34 @@
+---
+- name: Configure key files in client configuration
+  ansible.builtin.command:
+    cmd: ./easyrsa --batch build-client-full {{ username }} nopass
+    chdir: "{{ easyrsa_dir }}"
+    creates: "{{ easyrsa_dir }}/pki/issued/{{ username }}.crt"
+
+- name: Check created server certificate and key file
+  ansible.builtin.stat:
+    path: "{{ item }}"
+  loop:
+    - "{{ easyrsa_dir }}/pki/issued/{{ username }}.crt"
+    - "{{ easyrsa_dir }}/pki/private/{{ username }}.key"
+  register: key_files
+
+- name: Fail the playbook if any file is missing
+  ansible.builtin.assert:
+    that: 
+      - item.stat.exists | bool
+  loop: "{{ key_files.results }}"
+  loop_control:
+    label: "{{ item.item }}"
+
+- name: Copy OpenVPN sample client configuration file
+  ansible.builtin.copy:
+    src: "/usr/share/doc/openvpn/sample/sample-config-files/client.conf"
+    dest: "/tmp/{{ username }}.ovpn"
+    remote_src: yes
+
+- name: Configure client configuration file
+  ansible.builtin.lineinfile:
+    path: "/tmp/{{ username }}.ovpn"
+    regexp: '^remote my-server-1 1194$'
+    line: "remote {{ public_ip }} 1194"

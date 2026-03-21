@@ -1,0 +1,62 @@
+---
+- name: Create OpenVPN client on Rocky Linux 9
+  hosts: server_OpenVPN
+  become: true
+  roles:
+    - role: create_client
+      vars:
+        username: "{{ openvpn_username }}"
+        public_ip: "{{ public_ip_address }}"
+  
+  tasks:
+    - name: Get OpenVPN configuration file
+      ansible.builtin.fetch:
+        src: "/tmp/{{ openvpn_username }}.ovpn"
+        dest: "./{{ openvpn_username }}.ovpn"
+        flat: yes
+    
+    - name: Get ca.crt
+      ansible.builtin.fetch:
+        src: "{{ easyrsa_dir }}/pki/ca.crt"
+        dest: "./ca.crt"
+        flat: yes
+
+    - name: Get client crt
+      ansible.builtin.fetch:
+        src: "{{ easyrsa_dir }}/pki/issued/{{ openvpn_username }}.crt"
+        dest: "./{{ openvpn_username }}.crt"
+        flat: yes
+    
+    - name: Get client key
+      ansible.builtin.fetch:
+        src: "{{ easyrsa_dir }}/pki/private/{{ openvpn_username }}.key"
+        dest: "./{{ openvpn_username }}.key"
+        flat: yes
+
+- name: Edit OpenVPN configuration
+  hosts: localhost
+  tasks:
+    - name: Get command directory
+      ansible.builtin.command:
+        cmd: pwd
+      register: current_dir
+
+    - name: Set current_dir as fact
+      ansible.builtin.set_fact:
+        my_cwd: "{{ current_dir.stdout }}"
+    
+    - name: Configure client configuration file
+      ansible.builtin.lineinfile:
+        path: "./{{ openvpn_username }}.ovpn"
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+      loop:
+        - { regexp: '^ca ca.crt$', line: "ca {{ my_cwd }}/ca.crt" }
+        - { regexp: '^cert client.crt$', line: "cert {{ my_cwd }}/{{ openvpn_username }}.crt" }
+        - { regexp: '^key client.key$', line: "key {{ my_cwd }}/{{ openvpn_username }}.key" }
+
+    - name: Comment out TLS auth
+      ansible.builtin.replace:
+        path: "./{{ openvpn_username }}.ovpn"
+        regexp: '^tls-auth (.+$)'
+        replace: '#tls-auth \1'
