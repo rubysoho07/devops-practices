@@ -7,6 +7,8 @@
     openvpn_dir: /etc/openvpn
     easyrsa_dir: /etc/openvpn/easy-rsa
     server_name: server
+    my_subnet_ip: 172.31.0.0
+    subnet_mask: 255.255.0.0
 
   tasks:
     # -------------------------------------------------------
@@ -99,6 +101,13 @@
         - { regexp: '^key server.key$', line: "key {{ easyrsa_dir }}/pki/private/server.key" }
         - { regexp: '^dh dh.pem$', line: "dh {{ easyrsa_dir }}/pki/dh.pem" }
     
+    - name: Push route for VPC or Subnet
+      ansible.builtin.blockinfile:
+        path: "{{ openvpn_dir }}/server/{{ server_name }}.conf"
+        marker: "# {mark} ANSIBLE MANAGED BLOCK"
+        insertafter: '^;push "route (.+)$'
+        block: 'push "route {{ my_subnet_ip }} {{ subnet_mask }}"'
+
     - name: Comment out TLS auth
       ansible.builtin.replace:
         path: "{{ openvpn_dir }}/server/{{ server_name }}.conf"
@@ -132,9 +141,14 @@
       ansible.builtin.command:
         cmd: firewall-cmd --reload
 
+    # builtin.command 모듈로 실행 시 반영이 안 되는 것 같아서 posix.sysctl 모듈로 실행
     - name: Enable IP forwarding
-      ansible.builtin.command:
-        cmd: sysctl -w net.ipv4.ip_forward=1
+      ansible.posix.sysctl:
+        name: net.ipv4.ip_forward
+        value: '1'
+        sysctl_set: true
+        state: present
+        reload: true
 
     # -------------------------------------------------------
     # Starting OpenVPN server

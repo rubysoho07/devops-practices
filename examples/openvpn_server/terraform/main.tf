@@ -120,3 +120,33 @@ resource "aws_eip_association" "openvpn_server_eip_association" {
   instance_id   = aws_instance.openvpn_server.id
   allocation_id = aws_eip.openvpn_server_eip.id
 }
+
+# Security group for test server
+resource "aws_security_group" "test_server_sg" {
+  name        = "test-server-sg"
+  description = "Security group for test server"
+  vpc_id      = data.aws_vpc.default.id
+}
+
+# Allow all traffic from OpenVPN server
+resource "aws_security_group_rule" "allow_all_from_openvpn_server" {
+  type                     = "ingress"
+  from_port                = 0
+  to_port                  = 0
+  protocol                 = "-1"
+  security_group_id        = aws_security_group.test_server_sg.id
+  source_security_group_id = aws_security_group.openvpn_server_sg.id
+}
+
+# Test server in private subnet
+resource "aws_instance" "test_server" {
+  ami                    = "ami-00ae06c981dd2a581" # Rocky Linux 9 for aarch64 (Seoul Region)
+  instance_type          = "t4g.small"
+  key_name               = var.keypair_name
+  subnet_id              = data.aws_subnet.private_2a.id
+  vpc_security_group_ids = [aws_security_group.test_server_sg.id]
+
+  tags = {
+    Name = "Test-Server"
+  }
+}
