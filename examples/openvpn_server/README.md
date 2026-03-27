@@ -33,10 +33,10 @@ ansible-inventory -i inventory_aws_ec2.yml --graph
 # 서버 설정
 ansible-playbook -i inventory_aws_ec2.yml -u rocky --private-key (SSH_KEY 경로) playbook-openvpn-server.yaml
 
-# 클라이언트 설정
+# 클라이언트 생성
 ansible-playbook -i inventory_aws_ec2.yml -u rocky --private-key (SSH_KEY 경로) -e openvpn_username=(사용자 이름) playbook-openvpn-client.yaml 
 
-# (사용자 이름).ovpn, ca.crt, (사용자 이름).crt, (사용자 이름).key 파일 다운로드 여부를 확인합니다. 
+# (사용자 이름).ovpn 파일 다운로드 여부를 확인합니다. 
 ```
 
 ## macOS 기준 검증 방법

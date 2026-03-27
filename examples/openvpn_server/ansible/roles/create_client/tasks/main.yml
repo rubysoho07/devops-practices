@@ -32,3 +32,49 @@
     path: "/tmp/{{ username }}.ovpn"
     regexp: '^remote my-server-1 1194$'
     line: "remote {{ public_ip }} 1194"
+
+- name: Comment out TLS auth
+  ansible.builtin.replace:
+    path: "/tmp/{{ username }}.ovpn"
+    regexp: '^tls-auth (.+$)'
+    replace: '#tls-auth \1'
+
+- name: Read ca.crt
+  ansible.builtin.slurp:
+    src: "{{ easyrsa_dir }}/pki/ca.crt"
+  register: ca_crt
+
+- name: Read client crt
+  ansible.builtin.slurp:
+    src: "{{ easyrsa_dir }}/pki/issued/{{ username }}.crt"
+  register: client_crt
+
+- name: Read client key
+  ansible.builtin.slurp:
+    src: "{{ easyrsa_dir }}/pki/private/{{ username }}.key"
+  register: client_key
+
+- name: Remove inline ca/cert/key directives
+  ansible.builtin.lineinfile:
+    path: "/tmp/{{ username }}.ovpn"
+    regexp: "{{ item }}"
+    state: absent
+  loop:
+    - '^ca ca.crt$'
+    - '^cert client.crt$'
+    - '^key client.key$'
+
+- name: Embed ca, cert, key inline
+  ansible.builtin.blockinfile:
+    path: "/tmp/{{ username }}.ovpn"
+    block: |
+      <ca>
+      {{ ca_crt.content | b64decode }}
+      </ca>
+      <cert>
+      {{ client_crt.content | b64decode }}
+      </cert>
+      <key>
+      {{ client_key.content | b64decode }}
+      </key>
+    marker: ""
