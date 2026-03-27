@@ -69,7 +69,7 @@ resource "aws_instance" "nat_instance" {
   instance_type          = "t4g.small"
   subnet_id              = data.aws_subnet.public_2a.id
   vpc_security_group_ids = [aws_security_group.nat_instance_sg.id]
-  key_name               = "your-key-pair-name" # Replace with your actual key pair name
+  key_name               = var.keypair_name
 
   source_dest_check = false
 

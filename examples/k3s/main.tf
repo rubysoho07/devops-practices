@@ -101,7 +101,7 @@ resource "aws_instance" "k3s_single" {
   ami                    = data.aws_ssm_parameter.amazon_linux_2023_ami.value
   instance_type          = "t4g.small"
   subnet_id              = data.aws_subnet.public_subnet.id
-  key_name               = "your_key_pair"
+  key_name               = var.keypair_name
   vpc_security_group_ids = [aws_security_group.k3s_nodes.id]
 
   tags = {
@@ -113,7 +113,7 @@ resource "aws_instance" "k3s_multi_server" {
   ami                    = data.aws_ssm_parameter.amazon_linux_2023_ami.value
   instance_type          = "t4g.small"
   subnet_id              = data.aws_subnet.public_subnet.id
-  key_name               = "your_key_pair"
+  key_name               = var.keypair_name
   vpc_security_group_ids = [aws_security_group.k3s_nodes.id]
 
   tags = {
@@ -126,7 +126,7 @@ resource "aws_instance" "k3s_multi_agent" {
   ami                    = data.aws_ssm_parameter.amazon_linux_2023_ami.value
   instance_type          = "t4g.small"
   subnet_id              = data.aws_subnet.public_subnet.id
-  key_name               = "your_key_pair"
+  key_name               = var.keypair_name
   vpc_security_group_ids = [aws_security_group.k3s_nodes.id]
 
   tags = {
@@ -139,7 +139,7 @@ resource "aws_instance" "k3s_ha_server" {
   ami                    = data.aws_ssm_parameter.amazon_linux_2023_ami.value
   instance_type          = "t4g.small"
   subnet_id              = data.aws_subnet.public_subnet.id
-  key_name               = "your_key_pair"
+  key_name               = var.keypair_name
   vpc_security_group_ids = [aws_security_group.k3s_nodes.id]
 
   tags = {

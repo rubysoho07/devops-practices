@@ -82,7 +82,7 @@ resource "aws_instance" "mongodb" {
   count                  = 3
   ami                    = data.aws_ssm_parameter.amazon_linux_2023_ami.value
   instance_type          = "m5.large"
-  key_name               = "gonigoni-aws-apn2-20251105"
+  key_name               = var.keypair_name
   subnet_id              = local.subnet_ids[count.index]
   vpc_security_group_ids = [aws_security_group.mongodb_sg.id]
 
