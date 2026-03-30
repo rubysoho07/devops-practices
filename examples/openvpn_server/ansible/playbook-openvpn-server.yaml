@@ -96,10 +96,10 @@
         regexp: "{{ item.regexp }}"
         line: "{{ item.line }}"
       loop:
-        - { regexp: '^ca ca.crt$', line: "ca {{ easyrsa_dir }}/pki/ca.crt" }
-        - { regexp: '^cert server.crt$', line: "cert {{ easyrsa_dir }}/pki/issued/server.crt" }
-        - { regexp: '^key server.key$', line: "key {{ easyrsa_dir }}/pki/private/server.key" }
-        - { regexp: '^dh dh.pem$', line: "dh {{ easyrsa_dir }}/pki/dh.pem" }
+        - { regexp: '^ca ca.crt.+$', line: "ca {{ easyrsa_dir }}/pki/ca.crt" }
+        - { regexp: '^cert server.crt.+$', line: "cert {{ easyrsa_dir }}/pki/issued/server.crt" }
+        - { regexp: '^key server.key.+$', line: "key {{ easyrsa_dir }}/pki/private/server.key" }
+        - { regexp: '^dh dh.+.pem.+$', line: "dh {{ easyrsa_dir }}/pki/dh.pem" }
     
     - name: Push route for VPC or Subnet
       ansible.builtin.blockinfile:
