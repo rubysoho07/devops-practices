@@ -147,16 +147,16 @@
         state: started
 
     - name: Allow OpenVPN port in firewalld
-      ansible.builtin.command:
-        cmd: firewall-cmd --add-service=openvpn --permanent
+      ansible.posix.firewalld:
+        service: openvpn
+        permanent: true
+        state: enabled
 
     - name: Enable NAT by masquerade rule
-      ansible.builtin.command:
-        cmd: firewall-cmd --add-masquerade --permanent
-    
-    - name: Reload the firewall
-      ansible.builtin.command:
-        cmd: firewall-cmd --reload
+      ansible.posix.firewalld:
+        masquerade: true
+        permanent: true
+        state: enabled
 
     # builtin.command 모듈로 실행 시 반영이 안 되는 것 같아서 posix.sysctl 모듈로 실행
     - name: Enable IP forwarding
