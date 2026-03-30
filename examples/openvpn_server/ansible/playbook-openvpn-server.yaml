@@ -9,6 +9,7 @@
     server_name: server
     my_subnet_ip: 172.31.0.0
     subnet_mask: 255.255.0.0
+    route_all_traffic: false
 
   tasks:
     # -------------------------------------------------------
@@ -100,6 +101,13 @@
         - { regexp: '^cert server.crt.+$', line: "cert {{ easyrsa_dir }}/pki/issued/server.crt" }
         - { regexp: '^key server.key.+$', line: "key {{ easyrsa_dir }}/pki/private/server.key" }
         - { regexp: '^dh dh.+.pem.+$', line: "dh {{ easyrsa_dir }}/pki/dh.pem" }
+
+    - name: Configure to route all internet traffic via OpenVPN
+      when: route_all_traffic | bool
+      ansible.builtin.lineinfile:
+        path: "{{ openvpn_dir }}/server/{{ server_name }}.conf"
+        regexp: '^push "redirect-gateway def1 bypass-dhcp"$'
+        regexp: 'push "redirect-gateway def1 bypass-dhcp"'
     
     - name: Push route for VPC or Subnet
       ansible.builtin.blockinfile:
