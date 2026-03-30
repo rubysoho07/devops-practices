@@ -85,31 +85,39 @@
         state: directory
         mode: "0700"
 
+    - name: Check the configuration file already exists
+      ansible.builtin.stat:
+        path: "{{ openvpn_dir }}/server/{{ server_name }}.conf"
+      register: conf_file
+
     - name: Create server configuration
+      when: not conf_file.stat.exists
       ansible.builtin.copy:
         src: "/usr/share/doc/openvpn/sample/sample-config-files/server.conf"
         dest: "{{ openvpn_dir }}/server/{{ server_name }}.conf"
         remote_src: yes
 
     - name: Configure key files
+      when: not conf_file.stat.exists
       ansible.builtin.lineinfile:
         path: "{{ openvpn_dir }}/server/{{ server_name }}.conf"
         regexp: "{{ item.regexp }}"
         line: "{{ item.line }}"
       loop:
-        - { regexp: '^ca ca.crt.+$', line: "ca {{ easyrsa_dir }}/pki/ca.crt" }
-        - { regexp: '^cert server.crt.+$', line: "cert {{ easyrsa_dir }}/pki/issued/server.crt" }
-        - { regexp: '^key server.key.+$', line: "key {{ easyrsa_dir }}/pki/private/server.key" }
-        - { regexp: '^dh dh.+.pem.+$', line: "dh {{ easyrsa_dir }}/pki/dh.pem" }
+        - { regexp: '^ca ca.crt.*$', line: "ca {{ easyrsa_dir }}/pki/ca.crt" }
+        - { regexp: '^cert server.crt.*$', line: "cert {{ easyrsa_dir }}/pki/issued/server.crt" }
+        - { regexp: '^key server.key.*$', line: "key {{ easyrsa_dir }}/pki/private/server.key" }
+        - { regexp: '^dh dh.*.pem.*$', line: "dh {{ easyrsa_dir }}/pki/dh.pem" }
 
     - name: Configure to route all internet traffic via OpenVPN
-      when: route_all_traffic | bool
+      when: (not conf_file.stat.exists) and (route_all_traffic | bool)
       ansible.builtin.lineinfile:
         path: "{{ openvpn_dir }}/server/{{ server_name }}.conf"
         regexp: '^push "redirect-gateway def1 bypass-dhcp"$'
         regexp: 'push "redirect-gateway def1 bypass-dhcp"'
     
     - name: Push route for VPC or Subnet
+      when: not conf_file.stat.exists
       ansible.builtin.blockinfile:
         path: "{{ openvpn_dir }}/server/{{ server_name }}.conf"
         marker: "# {mark} ANSIBLE MANAGED BLOCK"
@@ -117,6 +125,7 @@
         block: 'push "route {{ my_subnet_ip }} {{ subnet_mask }}"'
 
     - name: Comment out TLS auth
+      when: not conf_file.stat.exists
       ansible.builtin.replace:
         path: "{{ openvpn_dir }}/server/{{ server_name }}.conf"
         regexp: '^tls-auth (.+$)'
