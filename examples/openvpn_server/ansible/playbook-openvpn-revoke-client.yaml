@@ -1,0 +1,21 @@
+---
+- name: Revoke OpenVPN client on Ubuntu
+  hosts: server_OpenVPN
+  become: true
+
+  tasks:
+    - name: Remove client ovpn file
+      ansible.builtin.file:
+        path: "/tmp/{{ username }}.ovpn"
+        state: absent
+
+    - name: Remove VPN user
+      ansible.builtin.user:
+        name: "{{ username }}"
+        state: absent
+        remove: true
+
+    - name: Remove OTP file
+      ansible.builtin.file:
+        path: "/etc/openvpn/otp/{{ username }}.google_authenticator"
+        state: absent
