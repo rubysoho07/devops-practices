@@ -190,7 +190,7 @@
         block: |
           *nat
           :POSTROUTING ACCEPT [0:0]
-          -A POSTROUTING -s 10.8.0.0/8 -o eth0 -j MASQUERADE
+          -A POSTROUTING -s 10.8.0.0/8 -o {{ ansible_facts['default_ipv4']['interface'] }} -j MASQUERADE
           COMMIT
 
     - name: Enable ufw forwarding policy
