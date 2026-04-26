@@ -1,5 +1,5 @@
 ---
-- name: Setup OpenVPN Server on Rocky Linux 9
+- name: Setup OpenVPN Server on Ubuntu
   hosts: server_OpenVPN
   become: true
 
@@ -10,29 +10,33 @@
     my_subnet_ip: 172.31.0.0
     subnet_mask: 255.255.0.0
     route_all_traffic: false
+    login_with_otp: false
 
   tasks:
     # -------------------------------------------------------
     # Install packages
     # -------------------------------------------------------
-    - name: Install epel-release
-      ansible.builtin.dnf:
-        name: epel-release
-        state: present
-
     - name: Install openvpn and easy-rsa
-      ansible.builtin.dnf:
+      ansible.builtin.apt:
         name:
           - openvpn
           - easy-rsa
         state: present
+        update_cache: true
+
+    - name: Install Google Authenticator PAM module
+      ansible.builtin.apt:
+        name: libpam-google-authenticator
+        state: present
+      when: login_with_otp | bool
+
 
     # -------------------------------------------------------
     # Setup Easy-RSA PKI
     # -------------------------------------------------------
     - name: Create symbolic link to easy-rsa 
       ansible.builtin.file:
-        src: /usr/share/easy-rsa/3
+        src: /usr/share/easy-rsa
         dest: "{{ easyrsa_dir }}"
         state: link
 
@@ -93,9 +97,10 @@
     - name: Create server configuration
       when: not conf_file.stat.exists
       ansible.builtin.copy:
-        src: "/usr/share/doc/openvpn/sample/sample-config-files/server.conf"
+        src: "/usr/share/doc/openvpn/examples/sample-config-files/server.conf"
         dest: "{{ openvpn_dir }}/server/{{ server_name }}.conf"
-        remote_src: yes
+        remote_src: true
+        force: false
 
     - name: Configure key files
       when: not conf_file.stat.exists
@@ -114,7 +119,7 @@
       ansible.builtin.lineinfile:
         path: "{{ openvpn_dir }}/server/{{ server_name }}.conf"
         regexp: '^push "redirect-gateway def1 bypass-dhcp"$'
-        regexp: 'push "redirect-gateway def1 bypass-dhcp"'
+        line: 'push "redirect-gateway def1 bypass-dhcp"'
     
     - name: Push route for VPC or Subnet
       when: not conf_file.stat.exists
@@ -131,34 +136,73 @@
         regexp: '^tls-auth (.+$)'
         replace: '#tls-auth \1'
 
+    - name: Enable PAM plugin in server config
+      ansible.builtin.lineinfile:
+        path: "{{ openvpn_dir }}/server/{{ server_name }}.conf"
+        line: "{{ item }}"
+        insertafter: EOF
+      loop:
+        - "plugin /usr/lib/{{ ansible_facts['architecture'] }}-linux-gnu/openvpn/plugins/openvpn-plugin-auth-pam.so openvpn"
+        - "verify-client-cert none"
+        - "username-as-common-name"
+      when: login_with_otp | bool
+
+    - name: Configure PAM for OpenVPN OTP
+      ansible.builtin.copy:
+        dest: /etc/pam.d/openvpn
+        content: |
+          auth required pam_google_authenticator.so
+          account required pam_permit.so
+        mode: '0644'
+      when: login_with_otp | bool
+
     # -------------------------------------------------------
     # Firewall & IP forwarding
     # -------------------------------------------------------
-    - name: Install firewalld
-      ansible.builtin.dnf:
-        name:
-          - firewalld
+    - name: Install ufw
+      ansible.builtin.apt:
+        name: ufw
         state: present
 
-    - name: Enable and start firewalld service
+    - name: Enable and start ufw service
       ansible.builtin.systemd:
-        name: "firewalld"
+        name: ufw
         enabled: true
         state: started
 
-    - name: Allow OpenVPN port in firewalld
-      ansible.posix.firewalld:
-        service: openvpn
-        permanent: true
+    - name: Allow SSH port in ufw
+      community.general.ufw:
+        rule: allow
+        port: '22'
+        proto: tcp
+
+    - name: Allow OpenVPN port in ufw
+      community.general.ufw:
+        rule: allow
+        port: '1194'
+        proto: udp
+
+    - name: Enable NAT masquerade in ufw
+      ansible.builtin.blockinfile:
+        path: /etc/ufw/before.rules
+        marker: "# {mark} ANSIBLE MANAGED BLOCK - OpenVPN NAT"
+        insertbefore: "^\\*filter"
+        block: |
+          *nat
+          :POSTROUTING ACCEPT [0:0]
+          -A POSTROUTING -s 10.8.0.0/8 -o eth0 -j MASQUERADE
+          COMMIT
+
+    - name: Enable ufw forwarding policy
+      ansible.builtin.lineinfile:
+        path: /etc/default/ufw
+        regexp: '^DEFAULT_FORWARD_POLICY='
+        line: 'DEFAULT_FORWARD_POLICY="ACCEPT"'
+
+    - name: Reload ufw
+      community.general.ufw:
         state: enabled
 
-    - name: Enable NAT by masquerade rule
-      ansible.posix.firewalld:
-        masquerade: true
-        permanent: true
-        state: enabled
-
-    # builtin.command 모듈로 실행 시 반영이 안 되는 것 같아서 posix.sysctl 모듈로 실행
     - name: Enable IP forwarding
       ansible.posix.sysctl:
         name: net.ipv4.ip_forward

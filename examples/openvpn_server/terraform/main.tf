@@ -35,6 +35,12 @@ data "aws_subnet" "private_2a" {
   }
 }
 
+# Ubuntu 24.04 AMI for ARM64 
+# 참고자료: https://documentation.ubuntu.com/aws/aws-how-to/instances/find-ubuntu-images/
+data "aws_ssm_parameter" "ubuntu_24_04_arm64_ami" {
+  name = "/aws/service/canonical/ubuntu/server/noble/stable/current/arm64/hvm/ebs-gp3/ami-id"
+}
+
 # Security Groups for OpenVPN server with recommended rules
 resource "aws_security_group" "openvpn_server_sg" {
   name        = "openvpn-server-sg"
@@ -94,7 +100,7 @@ resource "aws_security_group_rule" "allow_http_outbound" {
 
 # EC2 instance for OpenVPN server
 resource "aws_instance" "openvpn_server" {
-  ami                    = "ami-00ae06c981dd2a581" # Rocky Linux 9 for aarch64 (Seoul Region)
+  ami                    = data.aws_ssm_parameter.ubuntu_24_04_arm64_ami.value
   instance_type          = "t4g.small"
   key_name               = var.keypair_name
   subnet_id              = data.aws_subnet.public_2a.id
