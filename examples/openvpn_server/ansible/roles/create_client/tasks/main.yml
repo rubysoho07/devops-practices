@@ -1,4 +1,12 @@
 ---
+- name: Create VPN user (no login shell)
+  ansible.builtin.user:
+    name: "{{ username }}"
+    shell: /usr/sbin/nologin
+    create_home: true
+    state: present
+  when: login_with_otp | bool
+
 - name: Configure key files in client configuration
   ansible.builtin.command:
     cmd: ./easyrsa --batch build-client-full {{ username }} nopass
@@ -23,7 +31,7 @@
 
 - name: Copy OpenVPN sample client configuration file
   ansible.builtin.copy:
-    src: "/usr/share/doc/openvpn/sample/sample-config-files/client.conf"
+    src: "/usr/share/doc/openvpn/examples/sample-config-files/client.conf"
     dest: "/tmp/{{ username }}.ovpn"
     remote_src: yes
 
@@ -78,3 +86,10 @@
       {{ client_key.content | b64decode }}
       </key>
     marker: ""
+
+- name: Add auth-user-pass directive
+  ansible.builtin.lineinfile:
+    path: "/tmp/{{ username }}.ovpn"
+    line: "auth-user-pass"
+    insertafter: EOF
+  when: login_with_otp | bool

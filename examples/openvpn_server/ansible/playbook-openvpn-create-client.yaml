@@ -1,12 +1,17 @@
 ---
-- name: Create OpenVPN client on Rocky Linux 9
+- name: Create OpenVPN client on Ubuntu
   hosts: server_OpenVPN
   become: true
+
+  vars:
+    login_with_otp: false
+
   roles:
     - role: create_client
       vars:
         username: "{{ openvpn_username }}"
         public_ip: "{{ public_ip_address }}"
+        login_with_otp: "{{ login_with_otp }}"
   
   tasks:
     - name: Get OpenVPN configuration file

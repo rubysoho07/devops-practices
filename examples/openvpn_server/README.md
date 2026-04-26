@@ -4,6 +4,8 @@
 
 - Terraform으로 OpenVPN 서버 및 Private Subnet 내 서버 생성 (+관련 리소스 생성됨)
 - Ansible로 OpenVPN 서버와 클라이언트 생성
+- (선택) 모든 트래픽을 OpenVPN 서버로 라우팅
+- (선택) Google Authenticator로 로그인 (표시되는 숫자는 비밀번호로 입력)
 
 여기까지 작업한 내용은 OpenVPN을 통해 Private Subnet에 있는 서버에 접근 가능함을 검증했습니다. 필요에 따라 접근 가능한 범위를 줄이는 경우와 같이 추가 설정을 해야 할 수 있습니다. 
 
@@ -22,7 +24,7 @@ init -> plan -> apply 순으로 테스트하면 됩니다.
 
 ## Ansible
 
-Terraform으로 서버를 구성했다면 다음과 같이 실행해 볼 수 있습니다. 
+Terraform으로 서버를 구성했다면 다음과 같이 서버와 클라이언트를 설정합니다.
 
 ```shell
 cd ansible
@@ -31,12 +33,24 @@ cd ansible
 ansible-inventory -i inventory_aws_ec2.yml --graph
 
 # 서버 설정
-ansible-playbook -i inventory_aws_ec2.yml -u rocky --private-key (SSH_KEY 경로) playbook-openvpn-server.yaml
+ansible-playbook -i inventory_aws_ec2.yml -u ubuntu --private-key (SSH_KEY 경로) playbook-openvpn-server.yaml
+
+# 필요 시 다음과 같은 옵션을 추가로 붙여서 서버 설정 Playbook 실행
+# -e route_all_traffic=true : 모든 트래픽을 OpenVPN 서버를 통해 라우팅
+# -e login_with_otp=true : OTP로 비밀번호 입력하여 로그인 하도록 설정
 
 # 클라이언트 생성
-ansible-playbook -i inventory_aws_ec2.yml -u rocky --private-key (SSH_KEY 경로) -e openvpn_username=(사용자 이름) playbook-openvpn-client.yaml 
+ansible-playbook -i inventory_aws_ec2.yml -u ubuntu --private-key (SSH_KEY 경로) -e openvpn_username=(사용자 이름) playbook-openvpn-create-client.yaml 
 
 # (사용자 이름).ovpn 파일 다운로드 여부를 확인합니다. 
+```
+
+## Google OTP 사용 활성화 시 OTP 설정 방법
+
+운영자가 서버에 들어가서 실행해야 합니다. 
+
+```shell
+google-authenticator -t -d -f -r 3 -R 30 -s /etc/openvpn/otp/(사용자 이름).google_authenticator
 ```
 
 ## macOS 기준 검증 방법
