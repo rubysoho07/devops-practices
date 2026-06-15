@@ -1,19 +1,22 @@
 # k3s 클러스터 생성 테스트
 
+## 공통 리소스
+
+- 보안 그룹 (k3s_nodes) 및 관련 규칙
+
 ## 단일 노드 구성
 
 **Terraform 코드 구성**
 
-다음 리소스만으로 구성합니다. (나머지는 주석 처리해 주세요)
+다음 리소스만으로 구성합니다. (`-var k3s_mode=single` 옵션으로 실행)
 
-- 보안 그룹 (k3s_nodes) 및 관련 규칙
 - aws_instance.k3s_single EC2 인스턴스
 
 배포 방법
 
 ```shell
 terraform init
-terraform apply
+terraform apply -var k3s_mode=single
 ```
 
 **Ansible로 인스턴스 설정**
@@ -32,16 +35,15 @@ ansible-playbook -i inventory_k3s_multi_aws_ec2.yml -u ec2-user --private-key PR
 
 **Terraform 코드 구성**
 
-다음 리소스만으로 구성합니다. (나머지는 주석 처리해 주세요)
+다음 리소스만으로 구성합니다. (`-var k3s_mode=multi` 옵션으로 실행)
 
-- 보안 그룹 (k3s_nodes) 및 관련 규칙
 - aws_instance.k3s_multi_server, aws_instance.k3s_multi_agent EC2 인스턴스
 
 배포 방법
 
 ```shell
 terraform init
-terraform apply
+terraform apply -var k3s_mode=multi
 ```
 
 **Ansible로 인스턴스 설정**
@@ -60,8 +62,7 @@ ansible-playbook -i inventory_k3s_multi_aws_ec2.yml -u ec2-user --private-key PR
 
 **Terraform 코드 구성**
 
-다음 리소스만으로 구성합니다. (나머지는 주석 처리해 주세요)
-- 보안 그룹 (k3s_nodes) 및 관련 규칙
+다음 리소스만으로 구성합니다. (`-var k3s_mode=ha` 옵션으로 실행)
 - aws_instance.k3s_ha_server EC2 인스턴스
 - LB, Target Group, Target Group Attachment
 
@@ -69,7 +70,7 @@ ansible-playbook -i inventory_k3s_multi_aws_ec2.yml -u ec2-user --private-key PR
 
 ```shell
 terraform init
-terraform apply
+terraform apply -var k3s_mode=ha
 
 # nslookup으로 NLB의 공인 IP 주소를 확인하여 메모합니다.
 ```
