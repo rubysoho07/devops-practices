@@ -1,0 +1,53 @@
+# 샘플 애플리케이션 + Ingress (Application Load Balancer)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sample-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: sample-app
+  template:
+    metadata:
+      labels:
+        app: sample-app
+    spec:
+      containers:
+        - name: nginx
+          image: public.ecr.aws/nginx/nginx:stable-alpine
+          ports:
+            - containerPort: 80
+---
+# instance 타겟은 NodePort를 거치므로 Service 유형은 NodePort여야 합니다.
+apiVersion: v1
+kind: Service
+metadata:
+  name: sample-app
+spec:
+  type: NodePort
+  selector:
+    app: sample-app
+  ports:
+    - port: 80
+      targetPort: 80
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: sample-app
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: instance
+spec:
+  ingressClassName: alb
+  rules:
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: sample-app
+                port:
+                  number: 80

@@ -1,0 +1,18 @@
+# k3s 내장 Helm Controller가 이 파일을 읽어 AWS Load Balancer Controller를 설치합니다.
+# 참고자료: https://kubernetes-sigs.github.io/aws-load-balancer-controller/latest/deploy/installation/
+apiVersion: helm.cattle.io/v1
+kind: HelmChart
+metadata:
+  name: aws-load-balancer-controller
+  namespace: kube-system
+spec:
+  repo: https://aws.github.io/eks-charts
+  chart: aws-load-balancer-controller
+  version: "{{ aws_lbc_chart_version }}"
+  targetNamespace: kube-system
+  valuesContent: |-
+    clusterName: {{ cluster_name }}
+    region: {{ aws_region }}
+    vpcId: {{ aws_vpc_id }}
+    # 타겟 유형은 차트 기본값인 instance(NodePort 경유)를 그대로 사용합니다.
+    # Flannel의 Pod IP는 VPC에서 라우팅되지 않으므로 ip 타겟은 쓸 수 없습니다.

@@ -1,0 +1,29 @@
+# k3s 내장 Helm Controller가 이 파일을 읽어 AWS Cloud Controller Manager를 설치합니다.
+# 참고자료: https://docs.k3s.io/add-ons/helm
+apiVersion: helm.cattle.io/v1
+kind: HelmChart
+metadata:
+  name: aws-cloud-controller-manager
+  namespace: kube-system
+spec:
+  repo: https://kubernetes.github.io/cloud-provider-aws
+  chart: aws-cloud-controller-manager
+  version: "{{ aws_ccm_chart_version }}"
+  targetNamespace: kube-system
+  # 노드에 node.cloudprovider.kubernetes.io/uninitialized Taint가 남아 있어도 설치 Job이 실행되도록 합니다.
+  bootstrap: true
+  valuesContent: |-
+    image:
+      tag: {{ aws_ccm_image_tag }}
+    hostNetworking: true
+    # k3s 서버 노드의 레이블 값은 "true" 입니다. (차트 기본값은 빈 문자열)
+    nodeSelector:
+      node-role.kubernetes.io/control-plane: "true"
+    args:
+      - --v=2
+      - --cloud-provider=aws
+      # Pod 네트워크는 Flannel이 담당하므로 VPC 라우팅 테이블은 건드리지 않습니다.
+      - --configure-cloud-routes=false
+      # 로드밸런서는 AWS Load Balancer Controller가 전담하므로 service 컨트롤러를 끕니다.
+      # (켜 두면 loadBalancerClass가 없는 LoadBalancer Service에 Classic Load Balancer를 생성합니다)
+      - --controllers=*,-route,-service

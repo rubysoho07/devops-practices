@@ -1,0 +1,19 @@
+---
+# k3s 버전 (https://update.k3s.io/v1-release/channels 의 stable 채널 기준)
+k3s_version: v1.37.2+k3s1
+
+# AWS Cloud Controller Manager
+# 이미지 태그는 k3s(Kubernetes)의 마이너 버전과 맞춥니다.
+# https://github.com/kubernetes/cloud-provider-aws/releases
+aws_ccm_chart_version: 0.0.12
+aws_ccm_image_tag: v1.37.0
+
+# AWS Load Balancer Controller
+# 버전을 바꿀 때는 terraform/policies/aws_load_balancer_controller.json 도 같은 버전으로 교체합니다.
+# https://github.com/kubernetes-sigs/aws-load-balancer-controller/releases
+aws_lbc_chart_version: 3.6.3
+
+# 아래 값은 Inventory 플러그인(amazon.aws.aws_ec2)이 수집한 인스턴스 정보에서 가져옵니다.
+cluster_name: "{{ tags.Group }}"
+aws_region: "{{ placement.region }}"
+aws_vpc_id: "{{ vpc_id }}"

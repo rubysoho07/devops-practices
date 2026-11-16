@@ -1,0 +1,21 @@
+plugin: amazon.aws.aws_ec2
+
+regions:
+  - ap-northeast-2
+
+filters:
+  tag:Group: k3s-aws-lbc
+  instance-state-name: running
+
+# Role 태그(server, agent)에 따라 k3s_server, k3s_agent 그룹으로 나눕니다.
+keyed_groups:
+  - key: tags.Role
+    prefix: k3s
+
+hostnames:
+  - ip-address
+
+# compose의 값은 Jinja2 표현식이므로, 문자열은 따옴표를 한 번 더 감싸야 합니다.
+compose:
+  ansible_user: "'ec2-user'"
+  ansible_ssh_common_args: "'-o StrictHostKeyChecking=no'"

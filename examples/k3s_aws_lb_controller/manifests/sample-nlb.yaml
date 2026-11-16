@@ -1,0 +1,16 @@
+# sample-alb.yaml의 sample-app을 Network Load Balancer로 노출하는 Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: sample-app-nlb
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing
+    service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: instance
+spec:
+  type: LoadBalancer
+  loadBalancerClass: service.k8s.aws/nlb
+  selector:
+    app: sample-app
+  ports:
+    - port: 80
+      targetPort: 80
